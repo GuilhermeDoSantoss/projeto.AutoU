@@ -1,13 +1,13 @@
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
-import openai
+import os, openai
 import PyPDF2
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 
 
-openai.api_key = *** 
+openai.api_key = os.getenv("OPENAI_API_KEY") 
 
 
 app = Flask(__name__)
