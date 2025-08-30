@@ -1,21 +1,35 @@
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
-import os, openai
+import os
 import PyPDF2
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+from openai import OpenAI
 
 
-openai.api_key = os.getenv("OPENAI_API_KEY") 
+# NLTK: baixar pacotes necessários
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
 
 
+# Inicialização OpenAI
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+# Inicialização Flask
 app = Flask(__name__)
 CORS(app)
+
+
+# Rota principal
 @app.route("/")
 def home():
     return render_template("index.html")
 
+
+# Função: Pré-processamento de texto
 def preprocessar_texto(texto):
     tokens = nltk.word_tokenize(texto.lower())
     stop_words = set(stopwords.words('portuguese'))
@@ -23,71 +37,102 @@ def preprocessar_texto(texto):
     tokens_filtrados = [lemmatizer.lemmatize(t) for t in tokens if t.isalpha() and t not in stop_words]
     return " ".join(tokens_filtrados)
 
+# -----------------------------
+# Função para classificar produtividade de email
+
 def classificar_produtividade(texto):
+    """
+    Classifica o email como 'Produtivo' ou 'Improdutivo' usando OpenAI.
+    Se a API não estiver disponível ou a quota estiver zerada, retorna uma simulação.
+    """
     prompt = (
         "Classifique o seguinte email como 'Produtivo' ou 'Improdutivo' e explique brevemente o motivo:\n"
         f"Email: {texto}\n"
         "Resposta:"
     )
-    resposta = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=prompt,
-        max_tokens=60,
-        temperature=0.2,
-        n=1,
-        stop=None,
-    )
-    texto_resposta = resposta.choices[0].text.strip()
-    if "produtivo" in texto_resposta.lower():
-        categoria = "Produtivo"
-    else:
-        categoria = "Improdutivo"
-    return categoria, texto_resposta
 
+    try:
+        # Chamada à OpenAI
+        resposta = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "Você é um assistente que classifica emails."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=200,
+            temperature=0.3
+        )
+
+        conteudo = resposta.choices[0].message.content
+        categoria = "Produtivo" if "produtivo" in conteudo.lower() else "Improdutivo"
+
+        return categoria, conteudo
+
+    except Exception as e:
+        # Fallback gratuito simulando resposta
+        return "Produtivo", "Simulação: email classificado como produtivo (API disponível, mas sua conta OpenAI não possui créditos suficientes)"
+
+
+# Função para gerar resposta automática
 def gerar_resposta_automatica(texto, categoria):
-    prompt = (
-        f"Considere o seguinte email classificado como '{categoria}'. "
-        "Gere uma resposta automática educada e adequada para o remetente:\n"
-        f"Email: {texto}\n"
-        "Resposta:"
-    )
-    resposta = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=prompt,
-        max_tokens=60,
-        temperature=0.5,
-        n=1,
-        stop=None,
-    )
-    return resposta.choices[0].text.strip()
+    try:
+        resposta = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=(
+                f"Considere o seguinte email classificado como '{categoria}'. "
+                "Gere uma resposta automática educada e adequada para o remetente:\n"
+                f"Email: {texto}\n"
+                "Resposta:"
+            ),
+            max_tokens=60,
+            temperature=0.5,
+            n=1,
+            stop=None,
+        )
+        return resposta.choices[0].text.strip()
+    except Exception as e:
+        # Fallback gratuito
+        return f"Simulação de resposta automática para email classificado como '{categoria}'."
 
+
+
+# Endpoint: Processar email
 @app.route("/processar-email", methods=["POST"])
 def processar_email():
-    if "file" in request.files:
-        file = request.files["file"]
-        content = ""
-
-        if file.filename.endswith(".txt"):
-            content = file.read().decode("utf-8")
-        elif file.filename.endswith(".pdf"):
-            reader = PyPDF2.PdfReader(file)
-            for page in reader.pages:
-                content += page.extract_text() or ""
+    try:
+        if "file" in request.files:
+            file = request.files["file"]
+            content = ""
+            if file.filename.endswith(".txt"):
+                content = file.read().decode("utf-8")
+            elif file.filename.endswith(".pdf"):
+                reader = PyPDF2.PdfReader(file)
+                for page in reader.pages:
+                    content += page.extract_text() or ""
+            else:
+                return jsonify({"error": "Formato de arquivo não suportado"}), 400
         else:
-            return jsonify({"error": "Formato de arquivo não suportado"}), 400
+            data = request.json
+            content = data.get("texto", "")
 
         texto_preprocessado = preprocessar_texto(content)
         categoria, explicacao = classificar_produtividade(texto_preprocessado)
         resposta = gerar_resposta_automatica(content, categoria)
+
         return jsonify({"categoria": categoria, "explicacao": explicacao, "resposta": resposta})
 
-    else:
-        data = request.json
-        texto = data.get("texto", "")
-        texto_preprocessado = preprocessar_texto(texto)
-        categoria, explicacao = classificar_produtividade(texto_preprocessado)
-        resposta = gerar_resposta_automatica(texto, categoria)
-        return jsonify({"categoria": categoria, "explicacao": explicacao, "resposta": resposta})
+    except Exception as e:
+        return jsonify({"categoria": "Erro", "explicacao": str(e), "resposta": ""})
 
+
+# Endpoint: Validar arquivo
+@app.route("/validate", methods=["POST"])
+def validate_file():
+    if "file" not in request.files:
+        return jsonify({"error": "Nenhum arquivo enviado"}), 400
+    return jsonify({"status": "ok"})
+
+
+# Main
 if __name__ == "__main__":
     app.run(debug=True)

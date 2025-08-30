@@ -58,3 +58,25 @@ async function processarEmail() {
                 btn.disabled = false;
             }
         }
+            async function validateFile() {
+    const formData = new FormData();
+    const arquivo = document.getElementById("arquivo").files[0];
+    const erroDiv = document.getElementById("erro");
+    const loadingDiv = document.getElementById("loading");
+    const btn = document.getElementById("btnProcessar");
+    erroDiv.style.display = "none";
+    loadingDiv.style.display = "block";
+
+
+    if (!arquivo) {
+        erroDiv.innerText = "Por favor, selecione um arquivo para validação.";
+        erroDiv.style.display = "block";
+        return;
+    }
+        const response = await fetch("/validate", { method: "POST", body: formData });
+if (!response.ok) {
+    throw new Error("Erro na API: " + response.status);
+}
+
+const data = await response.json();
+            }
