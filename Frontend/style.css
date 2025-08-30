@@ -1,0 +1,237 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #bbcbf7, #e6f7ff);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 15px;
+}
+
+.container {
+    width: 100%;
+    max-width: 650px;
+    background: white;
+    padding: 25px 30px;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+textarea {
+    width: 100%;
+    height: 160px;
+    margin-bottom: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    font-size: 15px;
+    transition: all 0.2s ease;
+}
+
+textarea:focus {
+    border-color: #007BFF;
+    box-shadow: 0 0 6px rgba(0,123,255,0.3);
+    outline: none;
+}
+
+input[type="file"] {
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+button {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 10px;
+    background: #007BFF;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s, transform 0.2s;
+}
+
+button:disabled {
+    background: #b3d1ff;
+    cursor: not-allowed;
+}
+
+button:hover:enabled {
+    background: #0056b3;
+    transform: scale(1.05);
+}
+
+.resultado {
+    margin-top: 20px;
+    padding: 18px;
+    background: #f0fbff;
+    border: 1px solid #91d5ff;
+    border-radius: 10px;
+    font-size: 15px;
+    line-height: 1.5;
+    transition: all 0.3s;
+}
+
+.explicacao {
+    margin-top: 12px;
+    font-size: 14px;
+    color: #444;
+    background: #fdfdfd;
+    border-left: 4px solid #007BFF;
+    padding: 10px 14px;
+    border-radius: 6px;
+}
+
+.erro {
+    color: #d8000c;
+    background: #ffe6e6;
+    border: 1px solid #d8000c;
+    padding: 12px;
+    border-radius: 10px;
+    margin-top: 20px;
+    font-weight: bold;
+}
+
+.loading {
+    margin-top: 20px;
+    color: #007BFF;
+    font-weight: bold;
+    animation: pulse 1.5s infinite;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Animações */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+/* Responsividade */
+@media (max-width: 700px) {
+    .container {
+        padding: 20px;
+    }
+
+    textarea {
+        height: 140px;
+    }
+
+    button {
+        width: 100%;
+        padding: 12px 0;
+    }
+}
+@media (max-width: 400px) {
+    .container {
+        padding: 15px;
+    }
+
+    textarea {
+        height: 120px;
+        font-size: 14px;
+    }
+
+    button {
+        font-size: 14px;
+        padding: 10px 0;
+    }
+}
+@media (max-width: 300px) {
+    .container {
+        padding: 10px;
+    }
+
+    textarea {
+        height: 100px;
+        font-size: 13px;
+    }
+
+    button {
+        font-size: 13px;
+        padding: 8px 0;
+    }
+}
+@media (max-width: 250px) {
+    .container {
+        padding: 8px;
+    }
+
+    textarea {
+        height: 80px;
+        font-size: 12px;
+    }
+
+    button {
+        font-size: 12px;
+        padding: 6px 0;
+    }
+}
+@media (max-width: 200px) {
+    .container {
+        padding: 5px;
+    }
+
+    textarea {
+        height: 60px;
+        font-size: 11px;
+    }
+
+    button {
+        font-size: 11px;
+        padding: 5px 0;
+    }
+}
+@media (max-width: 150px) {
+    .container {
+        padding: 3px;
+    }
+
+    textarea {
+        height: 50px;
+        font-size: 10px;
+    }
+
+    button {
+        font-size: 10px;
+        padding: 4px 0;
+    }
+}
+@media (max-width: 100px) {
+    .container {
+        padding: 2px;
+    }
+
+    textarea {
+        height: 40px;
+        font-size: 9px;
+    }
+
+    button {
+        font-size: 9px;
+        padding: 3px 0;
+    }
+}
+@media (max-width: 50px) {
+    .container {
+        padding: 1px;
+    }
+
+    textarea {
+        height: 30px;
+        font-size: 8px;
+    }
+
+    button {
+        font-size: 8px;
+        padding: 2px 0;
+    }
+}
