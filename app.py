@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
+from mangum import Mangum
 import os
 import PyPDF2
 import nltk
@@ -22,7 +23,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # -----------------------------
 # Inicialização Flask
 # -----------------------------
-app = Flask(__name__, static_folder='static', template_folder='templates')
+app = Flask(__name__, template_folder='templates', static_folder='static')
 CORS(app)
 
 # -----------------------------
@@ -30,18 +31,12 @@ CORS(app)
 # -----------------------------
 @app.route("/")
 def home():
-    """
-    Renderiza a página principal
-    """
     return render_template("index.html")
 
 # -----------------------------
 # Função: Pré-processamento de texto
 # -----------------------------
 def preprocessar_texto(texto):
-    """
-    Tokeniza, remove stopwords e aplica lematização
-    """
     tokens = nltk.word_tokenize(texto.lower())
     stop_words = set(stopwords.words('portuguese'))
     lemmatizer = WordNetLemmatizer()
@@ -52,10 +47,6 @@ def preprocessar_texto(texto):
 # Função: Classificar produtividade
 # -----------------------------
 def classificar_produtividade(texto):
-    """
-    Classifica o email como 'Produtivo' ou 'Improdutivo' usando OpenAI.
-    Se a API não estiver disponível ou a quota zerada, retorna fallback gratuito.
-    """
     prompt = (
         "Classifique o seguinte email como 'Produtivo' ou 'Improdutivo' e explique brevemente o motivo:\n"
         f"Email: {texto}\n"
@@ -64,7 +55,7 @@ def classificar_produtividade(texto):
 
     try:
         resposta = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "Você é um assistente que classifica emails."},
                 {"role": "user", "content": prompt}
@@ -72,13 +63,12 @@ def classificar_produtividade(texto):
             max_tokens=200,
             temperature=0.3
         )
-
         conteudo = resposta.choices[0].message.content
         categoria = "Produtivo" if "produtivo" in conteudo.lower() else "Improdutivo"
         return categoria, conteudo
 
     except Exception:
-        # Fallback caso API não tenha créditos
+        # Fallback gratuito
         return "Produtivo", (
             "Simulação: email classificado como produtivo "
             "(API disponível, mas sua conta OpenAI não possui créditos suficientes)"
@@ -88,9 +78,6 @@ def classificar_produtividade(texto):
 # Função: Gerar resposta automática
 # -----------------------------
 def gerar_resposta_automatica(texto, categoria):
-    """
-    Gera uma resposta automática com base na categoria do email
-    """
     try:
         resposta = client.completions.create(
             model="text-davinci-003",
@@ -104,9 +91,7 @@ def gerar_resposta_automatica(texto, categoria):
             temperature=0.5
         )
         return resposta.choices[0].text.strip()
-
     except Exception:
-        # Fallback caso API não tenha créditos
         return f"Simulação de resposta automática para email classificado como '{categoria}'."
 
 # -----------------------------
@@ -115,7 +100,6 @@ def gerar_resposta_automatica(texto, categoria):
 @app.route("/processar-email", methods=["POST"])
 def processar_email():
     try:
-        # Verifica se enviou arquivo
         if "file" in request.files:
             file = request.files["file"]
             content = ""
@@ -128,15 +112,11 @@ def processar_email():
             else:
                 return jsonify({"error": "Formato de arquivo não suportado"}), 400
         else:
-            # Texto direto no corpo da requisição
             data = request.json
             content = data.get("texto", "")
 
-        # Pré-processamento
         texto_preprocessado = preprocessar_texto(content)
-        # Classificação
         categoria, explicacao = classificar_produtividade(texto_preprocessado)
-        # Resposta automática
         resposta = gerar_resposta_automatica(content, categoria)
 
         return jsonify({"categoria": categoria, "explicacao": explicacao, "resposta": resposta})
@@ -154,8 +134,8 @@ def validate_file():
     return jsonify({"status": "ok"})
 
 # -----------------------------
-# Main
+# Handler para Vercel Serverless
 # -----------------------------
-if __name__ == "__main__":
-    # Para deploy, alterar host='0.0.0.0' e remover debug
-    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+handler = Mangum(app)
+
+# NÃO colocar app.run() – funciona apenas localmente

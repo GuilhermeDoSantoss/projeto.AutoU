@@ -1,4 +1,5 @@
 flask
+mangum
 flask-cors
 nltk
 PyPDF2
